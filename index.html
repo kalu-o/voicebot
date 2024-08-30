@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>David: The Sports News Voice Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        button {
+            background-color: #4be6d3;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            padding: 10px 20px;
+            width: 200px;
+display: block;
+margin: auto;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #00b33f;
+        }
+
+        #recognized-text {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 50px;
+        }
+
+        .synthesis {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            min-height: 50px;
+        }
+.avatar {
+            background-image: url('https://images.unsplash.com/photo-1659018966820-de07c94e0d01?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHNlYXJjaHwxMHx8Ym90fGVufDB8fHx8MTcyNDE4MjQ4OXww&ixlib=rb-4.0.3&q=80&w=1080');
+            background-size: cover;
+            border-radius: 50%;
+            height: 100px;
+            width: 100px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!--<h1>Rag-Speech-Chat System</h1>-->
+       
+        <div class="recognition">
+<div class="avatar"></div>
+            <button id="start-recognition">🎙️ Click to Start Recognition</button>
+            <p id="recognized-text">User input ...</p>
+        </div>
+        <div class="synthesis">
+            <p id="text-to-speak">Bot response</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const recognitionButton = document.getElementById('start-recognition');
+            const recognizedText = document.getElementById('recognized-text');
+            const textToSpeak = document.getElementById('text-to-speak');
+            const nluEndPoint = ''; //provide a chat endpoint here
+const website = 'https://www.skysports.com/';
+let threadId = '';
+let count = 0;
+
+            // Speech Recognition
+            if ('webkitSpeechRecognition' in window) {
+                const recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = () => {
+                    recognitionButton.textContent = 'Listening...';
+                };
+
+                recognition.onresult = (event) => {
+                    recognizedText.textContent = ''
+                    textToSpeak.textContent = ''
+                    const transcript = event.results[0][0].transcript;
+                    recognizedText.textContent = capitalize(transcript);
+processNLU(transcript);
+                };
+
+                recognition.onerror = (event) => {
+                    console.error(event.error);
+                    recognitionButton.textContent = 'Start Recognition';
+                };
+
+                recognition.onend = () => {
+                    recognitionButton.textContent = 'Start Recognition';
+                };
+
+                recognitionButton.addEventListener('click', () => {
+                    recognition.start();
+                });
+            } else {
+                recognitionButton.disabled = true;
+                recognizedText.textContent = 'Speech recognition not supported in this browser.';
+            }
+
+            //NLU & Speech Synthesis
+            async function processNLU(text) {
+if (count == 0){
+text = text + '. Use these websites to answer: ' + website
+}
+                await fetch(nluEndPoint, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                    },
+                  body: JSON.stringify({ message: text, threadId: threadId}),
+                })
+                .then(response => response.json())
+                .then(data => {
+                  const responseText = data['message'];
+ threadId = data['threadId'];
+ count += 1;
+                  textToSpeak.textContent = responseText;
+                  synthesizeSpeech(responseText);
+                  //cacheOutput(text, responseText); // Cache the output for future use. Disable for now.
+                })
+                .catch(error => {
+                    recognizedText.textContent = `Error occurred in NLU processing: ${error}`;
+                });
+              }
+ 
+ 
+function capitalize(s){
+return s && s[0].toUpperCase() + s.slice(1);
+}  
+
+            function synthesizeSpeech(text) {
+                const speech = new SpeechSynthesisUtterance(text);
+//const voices = speechSynthesis.getVoices()
+//speech.voice = voices[10]
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(speech);
+            }
+
+            // Function to cache result
+            function cacheOutput(inputStr, outputStr) {
+                localStorage.setItem(inputStr, outputStr);
+            }
+
+            // Function to retrieve the cached results
+            function getOutput(inputStr) {
+                const outputStr = localStorage.getItem(inputStr);
+                if (outputStr === null) {
+                    return null;
+                } else {
+                    return outputStr;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
+--
